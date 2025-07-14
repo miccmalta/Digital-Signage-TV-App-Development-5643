@@ -5,6 +5,7 @@ import { useSocket } from '../../context/SocketContext';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../../common/SafeIcon';
 import QRCode from 'react-qr-code';
+import { parseRSSFeed, getYouTubeEmbedUrl, getYouTubeVideoId } from '../../utils/rssParser';
 
 const { FiRss, FiPlus, FiYoutube, FiCode } = FiIcons;
 
@@ -15,46 +16,10 @@ function PlayerView() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [screenId, setScreenId] = useState('1');
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [newsItems] = useState([
-    "Breaking: Technology stocks surge in early trading",
-    "Weather Alert: Heavy rain expected this afternoon",
-    "Sports Update: Local team advances to finals",
-    "Traffic Advisory: Main street construction begins Monday"
-  ]);
+  const [newsItems, setNewsItems] = useState([]);
   const [currentRssIndex, setCurrentRssIndex] = useState(0);
   const [slideIndex, setSlideIndex] = useState(0);
-  const [rssItems, setRssItems] = useState([
-    {
-      title: "Sample RSS Item 1",
-      description: "This is a sample RSS item description that would come from your feed.",
-      link: "https://example.com/1",
-      image: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&h=600&fit=crop"
-    },
-    {
-      title: "Sample RSS Item 2",
-      description: "Another RSS item with information about current events and news.",
-      link: "https://example.com/2",
-      image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&h=600&fit=crop"
-    },
-    {
-      title: "Sample RSS Item 3",
-      description: "The third sample RSS item with content from your feeds.",
-      link: "https://example.com/3",
-      image: "https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&h=600&fit=crop"
-    },
-    {
-      title: "Sample RSS Item 4",
-      description: "Fourth RSS feed item that would display your content.",
-      link: "https://example.com/4",
-      image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=600&fit=crop"
-    },
-    {
-      title: "Sample RSS Item 5",
-      description: "The final sample RSS item in this demonstration set.",
-      link: "https://example.com/5",
-      image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop"
-    }
-  ]);
+  const [rssItems, setRssItems] = useState([]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -82,17 +47,55 @@ function PlayerView() {
     return () => clearTimeout(timer);
   }, []);
 
-  // WebSocket content updates
+  // Load RSS feeds when layout changes
   useEffect(() => {
-    if (socket) {
-      socket.on('content-update', (data) => {
-        if (data.screenId === screenId) {
-          const content = state.content.find(c => c.id === data.contentId);
-          setCurrentContent(content);
-        }
-      });
+    const screen = state.screens.find(s => s.id === screenId);
+    if (screen && screen.layout) {
+      const { layout } = screen;
+      
+      // Load main column RSS feed
+      if (layout.leftColumn.rssUrl && 
+          (layout.leftColumn.contentType === 'rss' || layout.leftColumn.contentType === 'rssSlideshow')) {
+        loadRSSFeed(layout.leftColumn.rssUrl);
+      }
+      
+      // Load bottom bar RSS feed
+      if (layout.bottomBar.enabled && layout.bottomBar.rssUrl) {
+        loadBottomBarRSS(layout.bottomBar.rssUrl);
+      }
     }
-  }, [socket, screenId, state.content]);
+  }, [state.screens, screenId]);
+
+  const loadRSSFeed = async (url) => {
+    try {
+      const items = await parseRSSFeed(url);
+      setRssItems(items);
+    } catch (error) {
+      console.error('Failed to load RSS feed:', error);
+      setRssItems([{
+        title: "RSS Feed Error",
+        description: "Unable to load RSS feed. Please check the URL and try again.",
+        link: "#",
+        image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&h=600&fit=crop",
+        pubDate: new Date().toISOString()
+      }]);
+    }
+  };
+
+  const loadBottomBarRSS = async (url) => {
+    try {
+      const items = await parseRSSFeed(url);
+      setNewsItems(items.map(item => item.title));
+    } catch (error) {
+      console.error('Failed to load bottom bar RSS feed:', error);
+      setNewsItems([
+        "Breaking: Technology stocks surge in early trading",
+        "Weather Alert: Heavy rain expected this afternoon",
+        "Sports Update: Local team advances to finals",
+        "Traffic Advisory: Main street construction begins Monday"
+      ]);
+    }
+  };
 
   // For slideshow transitions
   useEffect(() => {
@@ -107,7 +110,7 @@ function PlayerView() {
         
         const interval = setInterval(() => {
           if (layout.leftColumn.contentType === 'rssSlideshow') {
-            setCurrentRssIndex(prev => (prev + 1) % rssItems.length);
+            setCurrentRssIndex(prev => (prev + 1) % Math.max(rssItems.length, 1));
           } else if (layout.leftColumn.contentType === 'slideshow') {
             const images = layout.leftColumn.images || [];
             if (images.length > 0) {
@@ -145,7 +148,7 @@ function PlayerView() {
                     {item.description}
                   </p>
                   <div className="text-sm opacity-60 mt-3" style={{ color: layout.textColor }}>
-                    {new Date().toLocaleTimeString()}
+                    {new Date(item.pubDate).toLocaleString()}
                   </div>
                 </div>
               ))}
@@ -154,7 +157,7 @@ function PlayerView() {
         );
       }
       
-      if (leftColumn.contentType === 'rssSlideshow') {
+      if (leftColumn.contentType === 'rssSlideshow' && rssItems.length > 0) {
         const currentRssItem = rssItems[currentRssIndex % rssItems.length];
         return (
           <div className="h-full relative bg-slate-900">
@@ -231,20 +234,21 @@ function PlayerView() {
       }
 
       if (leftColumn.contentType === 'youtube' && leftColumn.youtubeUrl) {
-        // Extract video ID from YouTube URL
-        const getYoutubeId = (url) => {
-          const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-          const match = url.match(regExp);
-          return (match && match[2].length === 11) ? match[2] : null;
-        };
-        
-        const videoId = getYoutubeId(leftColumn.youtubeUrl);
+        const videoId = getYouTubeVideoId(leftColumn.youtubeUrl);
         
         if (videoId) {
+          const embedUrl = getYouTubeEmbedUrl(videoId, {
+            autoplay: '1',
+            mute: '1',
+            controls: '0',
+            loop: '1',
+            rel: '0'
+          });
+          
           return (
             <div className="h-full w-full">
               <iframe 
-                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}`}
+                src={embedUrl}
                 title="YouTube video player"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -323,122 +327,22 @@ function PlayerView() {
         );
       }
 
-      if (sectionData.type === 'content' && sectionData.selectedContent) {
-        return (
-          <div className="h-full border border-gray-600 rounded-lg p-4">
-            <h4 className="text-lg font-semibold mb-3" style={{ color: layout.textColor }}>
-              {sectionData.selectedContent.name}
-            </h4>
-            {sectionData.selectedContent.type === 'image' && (
-              <img
-                src={sectionData.selectedContent.thumbnail}
-                alt={sectionData.selectedContent.name}
-                className="w-full h-32 object-cover rounded"
-              />
-            )}
-          </div>
-        );
-      }
-
-      if (sectionData.type === 'rss') {
-        return (
-          <div className="h-full border border-gray-600 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <SafeIcon icon={FiRss} className="text-blue-400" />
-              <h4 className="text-base font-semibold" style={{ color: layout.textColor }}>News Updates</h4>
-            </div>
-            <div className="space-y-2">
-              {rssItems.slice(0, 3).map((item, i) => (
-                <div key={i} className="text-sm opacity-80 leading-relaxed" style={{ color: layout.textColor }}>
-                  {item.title}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      }
-
-      if (sectionData.type === 'rssSlideshow') {
-        const currentRssItem = rssItems[currentRssIndex % rssItems.length];
-        return (
-          <div className="h-full border border-gray-600 rounded-lg overflow-hidden relative bg-slate-800">
-            <div className="absolute inset-0 bg-center bg-cover opacity-50" 
-                style={{ 
-                  backgroundImage: `url('${currentRssItem.image}')`
-                }}>
-            </div>
-            <div className="absolute inset-0 p-2 flex flex-col z-10">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="text-xs font-semibold text-white mb-1">{currentRssItem.title}</h4>
-                  <p className="text-xs text-white/80 line-clamp-2">
-                    {currentRssItem.description}
-                  </p>
-                </div>
-                {sectionData.showQrCode && (
-                  <div className="w-14 h-14 bg-white p-1 rounded">
-                    <QRCode
-                      size={48}
-                      value={currentRssItem.link}
-                      viewBox={`0 0 256 256`}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      if (sectionData.type === 'slideshow') {
-        if (sectionData.images && sectionData.images.length > 0) {
-          const currentImage = sectionData.images[slideIndex % sectionData.images.length];
-          return (
-            <div className="h-full border border-gray-600 rounded-lg overflow-hidden relative">
-              <img 
-                src={currentImage} 
-                alt="Slideshow preview" 
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "https://via.placeholder.com/300x200?text=Image+Error";
-                }}
-              />
-              
-              <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1">
-                {sectionData.images.map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`w-1 h-1 rounded-full ${i === (slideIndex % sectionData.images.length) ? 'bg-white' : 'bg-white/30'}`}
-                  ></div>
-                ))}
-              </div>
-            </div>
-          );
-        }
-        
-        return (
-          <div className="h-full border border-gray-600 rounded-lg flex items-center justify-center bg-slate-700">
-            <span className="text-xs text-slate-400">Image slideshow (no images)</span>
-          </div>
-        );
-      }
-
       if (sectionData.type === 'youtube' && sectionData.youtubeUrl) {
-        // Extract video ID from YouTube URL
-        const getYoutubeId = (url) => {
-          const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-          const match = url.match(regExp);
-          return (match && match[2].length === 11) ? match[2] : null;
-        };
-        
-        const videoId = getYoutubeId(sectionData.youtubeUrl);
+        const videoId = getYouTubeVideoId(sectionData.youtubeUrl);
         
         if (videoId) {
+          const embedUrl = getYouTubeEmbedUrl(videoId, {
+            autoplay: '1',
+            mute: '1',
+            controls: '0',
+            loop: '1',
+            rel: '0'
+          });
+          
           return (
             <div className="h-full border border-gray-600 rounded-lg overflow-hidden">
               <iframe 
-                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}`}
+                src={embedUrl}
                 title="YouTube video player"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -448,15 +352,6 @@ function PlayerView() {
             </div>
           );
         }
-        
-        return (
-          <div className="h-full border border-gray-600 rounded-lg p-2 bg-slate-700 flex flex-col justify-center">
-            <div className="text-center">
-              <SafeIcon icon={FiYoutube} className="text-red-500 text-xl mb-1 mx-auto" />
-              <div className="text-xs opacity-80 text-white">Invalid YouTube URL</div>
-            </div>
-          </div>
-        );
       }
 
       if (sectionData.type === 'widget' && sectionData.widgetCode) {
@@ -470,37 +365,16 @@ function PlayerView() {
         );
       }
 
-      if (sectionData.type === 'weather') {
-        return (
-          <div className="h-full border border-gray-600 rounded-lg p-4 flex flex-col justify-center">
-            <h4 className="text-lg font-semibold mb-3 text-center" style={{ color: layout.textColor }}>Weather</h4>
-            <div className="text-center">
-              <div className="text-4xl font-bold mb-2" style={{ color: layout.textColor }}>72°F</div>
-              <div className="text-base opacity-80" style={{ color: layout.textColor }}>Sunny</div>
-              <div className="text-sm opacity-60 mt-2" style={{ color: layout.textColor }}>
-                Feels like 75°F
-              </div>
-            </div>
+      // Add other section types here...
+      return (
+        <div className="h-full border border-gray-600 rounded-lg p-2">
+          <div className="text-center opacity-50">
+            <p className="text-sm" style={{ color: layout.textColor }}>
+              {sectionData.type} content
+            </p>
           </div>
-        );
-      }
-
-      if (sectionData.type === 'clock') {
-        return (
-          <div className="h-full border border-gray-600 rounded-lg p-4 flex flex-col justify-center">
-            <div className="text-center">
-              <div className="text-2xl font-bold mb-2" style={{ color: layout.textColor }}>
-                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </div>
-              <div className="text-base opacity-80" style={{ color: layout.textColor }}>
-                {currentTime.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      return renderRightSection(null, index);
+        </div>
+      );
     };
 
     const sectionHeight = layout.rightColumn.sections === 2 ? '50%' : '33.333%';
@@ -549,7 +423,7 @@ function PlayerView() {
         </div>
 
         {/* Breaking News Bar */}
-        {layout.bottomBar.enabled && (
+        {layout.bottomBar.enabled && newsItems.length > 0 && (
           <div
             className="absolute bottom-0 left-0 right-0 bg-red-600 text-white flex items-center overflow-hidden"
             style={{ height: `${layout.bottomBar.height}px` }}

@@ -19,12 +19,17 @@ function AddScreenModal({ onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    if (!formData.name || !formData.location || !formData.ipAddress) {
+      alert('Per favore compila tutti i campi obbligatori');
+      return;
+    }
+
     const newScreen = {
       id: Date.now().toString(),
       ...formData,
       status: 'offline',
       lastSeen: new Date().toISOString(),
-      currentContent: 'None',
+      currentContent: 'Nessuno',
       version: '1.2.3',
       uptime: '0h 0m',
       temperature: 'N/A',
@@ -32,6 +37,7 @@ function AddScreenModal({ onClose }) {
     };
 
     addScreen(newScreen);
+    alert('Schermo aggiunto con successo!');
     onClose();
   };
 
@@ -63,7 +69,7 @@ function AddScreenModal({ onClose }) {
               <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                 <SafeIcon icon={FiPlus} className="text-white" />
               </div>
-              <h2 className="text-xl font-bold text-white">Add New Screen</h2>
+              <h2 className="text-xl font-bold text-white">Aggiungi Nuovo Schermo</h2>
             </div>
             <button
               onClick={onClose}
@@ -76,7 +82,7 @@ function AddScreenModal({ onClose }) {
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Screen Name *
+                Nome Schermo *
               </label>
               <input
                 type="text"
@@ -85,13 +91,13 @@ function AddScreenModal({ onClose }) {
                 onChange={handleChange}
                 required
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Main Lobby Display"
+                placeholder="es. Display Lobby Principale"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Location *
+                Posizione *
               </label>
               <input
                 type="text"
@@ -100,13 +106,13 @@ function AddScreenModal({ onClose }) {
                 onChange={handleChange}
                 required
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Building A - Lobby"
+                placeholder="es. Edificio A - Lobby"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                IP Address *
+                Indirizzo IP *
               </label>
               <input
                 type="text"
@@ -116,14 +122,14 @@ function AddScreenModal({ onClose }) {
                 required
                 pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 192.168.1.100"
+                placeholder="es. 192.168.1.100"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Resolution
+                  Risoluzione
                 </label>
                 <select
                   name="resolution"
@@ -140,7 +146,7 @@ function AddScreenModal({ onClose }) {
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Orientation
+                  Orientamento
                 </label>
                 <select
                   name="orientation"
@@ -148,8 +154,8 @@ function AddScreenModal({ onClose }) {
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="landscape">Landscape</option>
-                  <option value="portrait">Portrait</option>
+                  <option value="landscape">Orizzontale</option>
+                  <option value="portrait">Verticale</option>
                 </select>
               </div>
             </div>
@@ -160,14 +166,14 @@ function AddScreenModal({ onClose }) {
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-200"
               >
                 <SafeIcon icon={FiPlus} />
-                Add Screen
+                Aggiungi Schermo
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
               >
-                Cancel
+                Annulla
               </button>
             </div>
           </form>

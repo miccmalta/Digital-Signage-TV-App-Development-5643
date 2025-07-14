@@ -3,6 +3,7 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 const AppContext = createContext();
 
 const initialState = {
+  user: null,
   screens: [
     {
       id: '1',
@@ -48,6 +49,35 @@ const initialState = {
       uptime: '72h 30m',
       temperature: '38°C',
       storageUsed: '82%'
+    }
+  ],
+  devices: [
+    {
+      id: '1',
+      name: 'Demo TV 1',
+      location: 'Main Lobby',
+      code: 'TV001',
+      status: 'offline',
+      lastSeen: null,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: '2',
+      name: 'Demo TV 2',
+      location: 'Conference Room',
+      code: 'TV002',
+      status: 'offline',
+      lastSeen: null,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: '3',
+      name: 'Demo TV 3',
+      location: 'Cafeteria',
+      code: 'TV003',
+      status: 'offline',
+      lastSeen: null,
+      createdAt: new Date().toISOString()
     }
   ],
   content: [
@@ -137,6 +167,16 @@ const initialState = {
 
 function appReducer(state, action) {
   switch (action.type) {
+    case 'SET_USER':
+      return {
+        ...state,
+        user: action.payload
+      };
+    case 'LOGOUT':
+      return {
+        ...state,
+        user: null
+      };
     case 'UPDATE_SCREEN':
       return {
         ...state,
@@ -146,37 +186,41 @@ function appReducer(state, action) {
             : screen
         )
       };
-    
     case 'ADD_SCREEN':
       return {
         ...state,
         screens: [...state.screens, action.payload]
       };
-    
     case 'DELETE_SCREEN':
       return {
         ...state,
         screens: state.screens.filter(screen => screen.id !== action.payload)
       };
-    
+    case 'ADD_DEVICE':
+      return {
+        ...state,
+        devices: [...state.devices, action.payload]
+      };
+    case 'DELETE_DEVICE':
+      return {
+        ...state,
+        devices: state.devices.filter(device => device.id !== action.payload)
+      };
     case 'ADD_CONTENT':
       return {
         ...state,
         content: [...state.content, action.payload]
       };
-    
     case 'DELETE_CONTENT':
       return {
         ...state,
         content: state.content.filter(content => content.id !== action.payload)
       };
-    
     case 'ADD_SCHEDULE':
       return {
         ...state,
         schedules: [...state.schedules, action.payload]
       };
-    
     case 'UPDATE_SCHEDULE':
       return {
         ...state,
@@ -186,25 +230,26 @@ function appReducer(state, action) {
             : schedule
         )
       };
-    
     case 'DELETE_SCHEDULE':
       return {
         ...state,
         schedules: state.schedules.filter(schedule => schedule.id !== action.payload)
       };
-    
     case 'UPDATE_SETTINGS':
       return {
         ...state,
         settings: { ...state.settings, ...action.payload }
       };
-    
     case 'UPDATE_ANALYTICS':
       return {
         ...state,
         analytics: { ...state.analytics, ...action.payload }
       };
-    
+    case 'LOAD_STATE':
+      return {
+        ...initialState,
+        ...action.payload
+      };
     default:
       return state;
   }
@@ -236,9 +281,13 @@ export function AppProvider({ children }) {
     state,
     dispatch,
     // Helper functions
+    setUser: (user) => dispatch({ type: 'SET_USER', payload: user }),
+    logout: () => dispatch({ type: 'LOGOUT' }),
     updateScreen: (id, updates) => dispatch({ type: 'UPDATE_SCREEN', payload: { id, updates } }),
     addScreen: (screen) => dispatch({ type: 'ADD_SCREEN', payload: screen }),
     deleteScreen: (id) => dispatch({ type: 'DELETE_SCREEN', payload: id }),
+    addDevice: (device) => dispatch({ type: 'ADD_DEVICE', payload: device }),
+    deleteDevice: (id) => dispatch({ type: 'DELETE_DEVICE', payload: id }),
     addContent: (content) => dispatch({ type: 'ADD_CONTENT', payload: content }),
     deleteContent: (id) => dispatch({ type: 'DELETE_CONTENT', payload: id }),
     addSchedule: (schedule) => dispatch({ type: 'ADD_SCHEDULE', payload: schedule }),

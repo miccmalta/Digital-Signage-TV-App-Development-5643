@@ -30,12 +30,18 @@ function ScreenModal({ screen, onClose, onAction }) {
   };
 
   const handleSave = () => {
+    if (!editData.name || !editData.location) {
+      alert('Nome e posizione sono obbligatori');
+      return;
+    }
+
     updateScreen(screen.id, editData);
     setIsEditing(false);
+    alert('Schermo aggiornato con successo!');
   };
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this screen?')) {
+    if (window.confirm('Sei sicuro di voler eliminare questo schermo?')) {
       deleteScreen(screen.id);
       onClose();
     }
@@ -95,7 +101,7 @@ function ScreenModal({ screen, onClose, onAction }) {
               <div>
                 <div className="text-lg font-semibold text-white capitalize">{screen.status}</div>
                 <div className="text-sm text-slate-400">
-                  Last seen: {format(new Date(screen.lastSeen), 'PPpp')}
+                  Ultimo accesso: {format(new Date(screen.lastSeen), 'dd/MM/yyyy HH:mm')}
                 </div>
               </div>
             </div>
@@ -103,7 +109,7 @@ function ScreenModal({ screen, onClose, onAction }) {
             {isEditing ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Screen Name</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Nome Schermo</label>
                   <input
                     type="text"
                     value={editData.name}
@@ -112,7 +118,7 @@ function ScreenModal({ screen, onClose, onAction }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Location</label>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Posizione</label>
                   <input
                     type="text"
                     value={editData.location}
@@ -122,7 +128,7 @@ function ScreenModal({ screen, onClose, onAction }) {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Resolution</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Risoluzione</label>
                     <select
                       value={editData.resolution}
                       onChange={(e) => setEditData({ ...editData, resolution: e.target.value })}
@@ -135,14 +141,14 @@ function ScreenModal({ screen, onClose, onAction }) {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Orientation</label>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Orientamento</label>
                     <select
                       value={editData.orientation}
                       onChange={(e) => setEditData({ ...editData, orientation: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="landscape">Landscape</option>
-                      <option value="portrait">Portrait</option>
+                      <option value="landscape">Orizzontale</option>
+                      <option value="portrait">Verticale</option>
                     </select>
                   </div>
                 </div>
@@ -151,13 +157,13 @@ function ScreenModal({ screen, onClose, onAction }) {
                     onClick={handleSave}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    Save Changes
+                    Salva Modifiche
                   </button>
                   <button
                     onClick={() => setIsEditing(false)}
                     className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
                   >
-                    Cancel
+                    Annulla
                   </button>
                 </div>
               </div>
@@ -165,46 +171,45 @@ function ScreenModal({ screen, onClose, onAction }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">Screen Details</h3>
+                    <h3 className="text-lg font-semibold text-white mb-3">Dettagli Schermo</h3>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-slate-400">IP Address:</span>
+                        <span className="text-slate-400">Indirizzo IP:</span>
                         <span className="text-white">{screen.ipAddress}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Resolution:</span>
+                        <span className="text-slate-400">Risoluzione:</span>
                         <span className="text-white">{screen.resolution}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Orientation:</span>
+                        <span className="text-slate-400">Orientamento:</span>
                         <span className="text-white capitalize">{screen.orientation}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Version:</span>
+                        <span className="text-slate-400">Versione:</span>
                         <span className="text-white">{screen.version}</span>
                       </div>
                     </div>
                   </div>
                 </div>
-
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">System Status</h3>
+                    <h3 className="text-lg font-semibold text-white mb-3">Stato Sistema</h3>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-slate-400">Uptime:</span>
                         <span className="text-white">{screen.uptime}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Temperature:</span>
+                        <span className="text-slate-400">Temperatura:</span>
                         <span className="text-white">{screen.temperature}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Storage Used:</span>
+                        <span className="text-slate-400">Storage Usato:</span>
                         <span className="text-white">{screen.storageUsed}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Current Content:</span>
+                        <span className="text-slate-400">Contenuto Attuale:</span>
                         <span className="text-white">{screen.currentContent}</span>
                       </div>
                     </div>
@@ -215,25 +220,34 @@ function ScreenModal({ screen, onClose, onAction }) {
 
             <div className="flex gap-2 pt-4 border-t border-slate-700">
               <button
-                onClick={() => onAction(screen.id, 'restart')}
+                onClick={() => {
+                  onAction(screen.id, 'restart');
+                  alert('Comando riavvio inviato');
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
               >
                 <SafeIcon icon={FiRefreshCw} />
-                Restart
+                Riavvia
               </button>
               <button
-                onClick={() => onAction(screen.id, screen.status === 'online' ? 'pause' : 'resume')}
+                onClick={() => {
+                  onAction(screen.id, screen.status === 'online' ? 'pause' : 'resume');
+                  alert(`Comando ${screen.status === 'online' ? 'pausa' : 'riprendi'} inviato`);
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
               >
                 <SafeIcon icon={screen.status === 'online' ? FiPause : FiPlay} />
-                {screen.status === 'online' ? 'Pause' : 'Resume'}
+                {screen.status === 'online' ? 'Pausa' : 'Riprendi'}
               </button>
               <button
-                onClick={() => onAction(screen.id, 'screenshot')}
+                onClick={() => {
+                  onAction(screen.id, 'screenshot');
+                  alert('Screenshot catturato');
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <SafeIcon icon={FiMonitor} />
-                Take Screenshot
+                Screenshot
               </button>
             </div>
           </div>

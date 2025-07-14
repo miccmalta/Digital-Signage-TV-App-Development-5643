@@ -23,6 +23,7 @@ function UploadModal({ onClose }) {
       progress: 0,
       uploaded: false
     }));
+
     setFiles(prev => [...prev, ...newFiles]);
   }, []);
 
@@ -36,11 +37,16 @@ function UploadModal({ onClose }) {
   });
 
   const handleUpload = async () => {
+    if (files.length === 0) {
+      alert('Nessun file selezionato');
+      return;
+    }
+
     setUploading(true);
-    
+
     for (const fileData of files) {
       if (!fileData.uploaded) {
-        // Simulate upload progress
+        // Simula progress upload
         for (let progress = 0; progress <= 100; progress += 10) {
           await new Promise(resolve => setTimeout(resolve, 100));
           setFiles(prev => prev.map(f => 
@@ -48,7 +54,7 @@ function UploadModal({ onClose }) {
           ));
         }
 
-        // Add to content library
+        // Aggiungi alla libreria contenuti
         const newContent = {
           id: Date.now().toString() + Math.random(),
           name: fileData.name.replace(/\.[^/.]+$/, ''),
@@ -60,7 +66,7 @@ function UploadModal({ onClose }) {
             URL.createObjectURL(fileData.file) : 
             'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=200&fit=crop',
           url: URL.createObjectURL(fileData.file),
-          tags: ['uploaded']
+          tags: ['caricato']
         };
 
         addContent(newContent);
@@ -72,6 +78,7 @@ function UploadModal({ onClose }) {
     }
 
     setUploading(false);
+    alert('Upload completato con successo!');
     setTimeout(onClose, 1000);
   };
 
@@ -96,7 +103,7 @@ function UploadModal({ onClose }) {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between p-6 border-b border-slate-700">
-            <h2 className="text-xl font-bold text-white">Upload Content</h2>
+            <h2 className="text-xl font-bold text-white">Carica Contenuto</h2>
             <button
               onClick={onClose}
               className="p-2 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors"
@@ -109,26 +116,26 @@ function UploadModal({ onClose }) {
             <div
               {...getRootProps()}
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                isDragActive
-                  ? 'border-blue-500 bg-blue-500/10'
+                isDragActive 
+                  ? 'border-blue-500 bg-blue-500/10' 
                   : 'border-slate-600 hover:border-slate-500'
               }`}
             >
               <input {...getInputProps()} />
               <SafeIcon icon={FiUpload} className="text-4xl text-slate-400 mx-auto mb-4" />
               {isDragActive ? (
-                <p className="text-blue-400">Drop the files here...</p>
+                <p className="text-blue-400">Rilascia i file qui...</p>
               ) : (
                 <div>
-                  <p className="text-slate-300 mb-2">Drag & drop files here, or click to select</p>
-                  <p className="text-sm text-slate-400">Supports: Images, Videos, HTML files</p>
+                  <p className="text-slate-300 mb-2">Trascina i file qui o clicca per selezionare</p>
+                  <p className="text-sm text-slate-400">Supporta: Immagini, Video, File HTML</p>
                 </div>
               )}
             </div>
 
             {files.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-white">Files to Upload</h3>
+                <h3 className="text-lg font-semibold text-white">File da Caricare</h3>
                 {files.map((fileData) => (
                   <div key={fileData.id} className="bg-slate-700 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
@@ -156,7 +163,7 @@ function UploadModal({ onClose }) {
                     </div>
                     {fileData.progress > 0 && (
                       <div className="w-full bg-slate-600 rounded-full h-2">
-                        <div
+                        <div 
                           className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${fileData.progress}%` }}
                         />
@@ -174,13 +181,13 @@ function UploadModal({ onClose }) {
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <SafeIcon icon={FiUpload} />
-                {uploading ? 'Uploading...' : 'Upload Files'}
+                {uploading ? 'Caricamento...' : 'Carica File'}
               </button>
               <button
                 onClick={onClose}
                 className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
               >
-                Cancel
+                Annulla
               </button>
             </div>
           </div>
